@@ -1,0 +1,75 @@
+---
+title: "exercise_week5"
+author: "Nicolas Steinmann"
+date: "28 5 2021"
+output: html_document
+---
+
+```{r}
+library(readr)
+library(sf)
+library(terra)
+library(dplyr)
+library(lubridate)
+library(ggplot2)
+library(tmap)
+
+wildschwein_BE <- read_delim("data/wildschwein_BE_2056.txt", ",")%>%
+  st_as_sf(coords = c("E", "N"), crs = 2056, remove = FALSE)
+```
+
+## Task 1
+
+1) The dataset contains information about which crops are grown on the different fields in our study area
+2) The data type is Polygons.
+3) There is a unique identifier field which is an integer. For the geometry each field contains a list with a vector of integer coordinates that define the postition and geometry of the feature and an attribute that tells the sf-function which geometry type to use.
+4) Judging from the coordinate format this is in the Swiss metric coordinate system LV95.
+
+```{r}
+fields <- read_sf("data/Feldaufnahmen_Fanel.gpkg")
+
+ggplot(data = fields)+
+  geom_sf(aes(fill = Frucht))+
+  coord_sf(datum = 2056)
+```
+
+## Task 2
+
+```{r}
+#select may and june fixes
+wildschwein_may_june <- filter(wildschwein_BE, month(wildschwein_BE$DatetimeUTC) == 5 | month(wildschwein_BE$DatetimeUTC) == 6)
+
+#Spatial join
+joined_wildschwein <- st_join(wildschwein_may_june, fields, st_intersects)
+
+```
+
+## Task 3
+
+
+Ruth loves Onions and Corn
+Sabi is into beans
+Rosa likes to eat barley and beets.
+
+Everyones chillin' in the forest most of the time.
+```{r}
+
+grouped_wildschwein <- joined_wildschwein%>%
+  group_by(Frucht, TierName)%>%
+  count(Frucht)%>%
+  ungroup()%>%
+  
+  group_by(Frucht)%>%
+  mutate(ntot = sum(n), nrel = (n/ntot)*100)%>%
+  ungroup()%>%
+  
+  filter(ntot > 100)
+
+
+ggplot(grouped_wildschwein)+
+  geom_bar(aes(x = Frucht, y = nrel, fill = TierName), stat = 'identity')
+
+ggplot(grouped_wildschwein)+
+  geom_bar(aes(x = Frucht, y = n, fill = TierName), stat = 'identity')
+
+```
