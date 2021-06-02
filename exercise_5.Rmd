@@ -63,7 +63,7 @@ grouped_wildschwein <- joined_wildschwein%>%
   mutate(ntot = sum(n), nrel = (n/ntot)*100)%>%
   ungroup()%>%
   
-  filter(ntot > 100)
+  filter(ntot > 300)
 
 
 ggplot(grouped_wildschwein)+
@@ -72,4 +72,23 @@ ggplot(grouped_wildschwein)+
 ggplot(grouped_wildschwein)+
   geom_bar(aes(x = Frucht, y = n, fill = TierName), stat = 'identity')
 
+```
+##Task 4
+
+```{r}
+veg_index <- terra::rast("data/vegetationshoehe_LFI.tif")
+
+#plotting the raster data
+tmap_mode("view")
+
+tm_shape(veg_index, scientfic = TRUE, format = "g") +
+  tm_raster("vegetationshoehe_LFI", palette = viridisLite::viridis(10))
+
+```
+##Task 5
+```{r}
+xy <- read_delim("data/wildschwein_BE_2056.txt", delim = ",")%>%
+  vect(type="points", geom=c("E", "N"))
+
+terra::extract(veg_index, xy, method = "simple", xy = TRUE, fun = NULL)
 ```
