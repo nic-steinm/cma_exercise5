@@ -67,10 +67,18 @@ grouped_wildschwein <- joined_wildschwein%>%
 
 
 ggplot(grouped_wildschwein)+
-  geom_bar(aes(x = Frucht, y = nrel, fill = TierName), stat = 'identity')
+  geom_bar(aes(x = Frucht, y = nrel, fill = TierName), stat = 'identity')+
+  labs(title = "Relative Verteilung der Aufenthaltsorte")+
+  ylab("[%]")+
+  xlab("Feldfrucht")
+
 
 ggplot(grouped_wildschwein)+
-  geom_bar(aes(x = Frucht, y = n, fill = TierName), stat = 'identity')
+  geom_bar(aes(x = Frucht, y = n, fill = TierName), stat = 'identity')+
+  labs(title = "Absolute Verteilung der Aufenthaltsorte")+
+  ylab("Anzahl Fixe")+
+  xlab("Feldfrucht")
+  
 
 
 #Preparing temporal and relative values
@@ -82,15 +90,15 @@ grouped_wildschwein2 <- joined_wildschwein%>%
   count()%>%
   mutate(nrel = round((n/ntot)*100, 2))%>%
   
-  #Preparing data so it's more tidy
-  mutate(Frucht = ifelse(is.na(Frucht)==TRUE, "Andere", Frucht), newFrucht = ifelse(nrel >= 10, Frucht, "Andere"))
+  #Preparing data so it has less irrelevant classes
+  mutate(Frucht = ifelse(is.na(Frucht)==TRUE, "Andere", Frucht), newFrucht = ifelse(nrel >= 5, Frucht, "Andere"))
   
   
 
 ggplot(grouped_wildschwein2)+
   geom_bar(width = 1, aes(x = hour, y = nrel, fill = newFrucht), stat = 'identity')+
   facet_wrap(~TierName, nrow = 1)+
-  labs(title = "Aufenthaltsorte von Wildschweinen über den Tag (Relativ)")+
+  labs(title = "Aufenthaltsorte von Wildschweinen über den Tagesverlauf (Relativ)")+
   ylab("[%]")+
   xlab("Stunde")
 
@@ -98,7 +106,7 @@ ggplot(grouped_wildschwein2)+
 ggplot(grouped_wildschwein2)+
   geom_bar(width = 1, aes(x = hour, y = n, fill = newFrucht), stat = 'identity')+
   facet_wrap(~TierName, nrow = 1)+
-  labs(title = "Aufenthaltsorte von Wildschweinen über den Tag (Total)")+
+  labs(title = "Aufenthaltsorte von Wildschweinen über den Tagesverlauf (Absolute)")+
   ylab("Anzahl Fixes")+
   xlab("Stunde")
 
@@ -117,6 +125,8 @@ tm_shape(veg_index, scientfic = TRUE, format = "g") +
 
 ```
 ##Task 5
+
+Boars come out of the forest in the evening and go back in the morning.
 ```{r}
 #creating a vector
 xy <- joined_wildschwein
@@ -128,7 +138,36 @@ veg_info <- terra::extract(veg_index, xy, method = "simple", xy = TRUE, fun = NU
 
 #joining the annotated coordinates to the spatial object with a left join
 annotated_wildschwein <- left_join(joined_wildschwein, veg_info, by = c("E" = "x", "N" = "y"))
-                                   
-                                   
+
+
+grouped_wildschwein3 <- annotated_wildschwein%>%
+  mutate(hour = hour(DatetimeUTC))%>%
+  group_by(TierName, hour)%>%
+  summarise(veg_med = median(vegetationshoehe_LFI, na.rm = TRUE),
+            veg_mean = mean(vegetationshoehe_LFI, na.rm = TRUE),
+            veg_std = sd(vegetationshoehe_LFI, na.rm = TRUE)
+            )
+
+ggplot(grouped_wildschwein3)+
+  geom_bar(width = 1, aes(x = hour, y = veg_mean, fill = TierName), stat = 'identity')+
+  facet_wrap(~TierName, nrow = 1)+
+  labs(title = "Durchschnittliche Vegetationshöhe beim Aufenthaltsort von Wildschweinen")+
+  ylab("Durchschnittlich Vegetationshöhe [m]")+
+  xlab("Stunde")
+
+ggplot(grouped_wildschwein3)+
+  geom_bar(width = 1, aes(x = hour, y = veg_med, fill = TierName), stat = 'identity')+
+  facet_wrap(~TierName, nrow = 1)+
+  labs(title = "Mediane Vegetationshöhe beim Aufenthaltsort von Wildschweinen")+
+  ylab("Mediane Vegetationshöhe [m]")+
+  xlab("Stunde")
+
+ggplot(grouped_wildschwein3)+
+  geom_bar(width = 1, aes(x = hour, y = veg_std, fill = TierName), stat = 'identity')+
+  facet_wrap(~TierName, nrow = 1)+
+  labs(title = "Standardabweichung der Vegetationshöhe beim Aufenthaltsort von Wildschweinen")+
+  ylab("Sd Vegetationshöhe [m]")+
+  xlab("Stunde")
+
 
 ```
