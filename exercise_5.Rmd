@@ -48,7 +48,7 @@ joined_wildschwein <- st_join(wildschwein_may_june, fields, st_intersects)
 
 
 Ruth loves Onions and Corn
-Sabi is into beans
+Sabi is into beans and wetlands
 Rosa likes to eat barley and beets.
 
 Everyones chillin' in the forest most of the time.
@@ -72,12 +72,35 @@ ggplot(grouped_wildschwein)+
 ggplot(grouped_wildschwein)+
   geom_bar(aes(x = Frucht, y = n, fill = TierName), stat = 'identity')
 
+
+#Preparing temporal and relative values
 grouped_wildschwein2 <- joined_wildschwein%>%
   mutate(hour = hour(DatetimeUTC))%>%
-  group_by(TierName, Frucht, hour)%>%
-  count(Frucht)
+  group_by(TierName, hour)%>%
+  add_tally(name = "ntot")%>%
+  group_by(TierName, hour, Frucht, ntot)%>%
+  count()%>%
+  mutate(nrel = round((n/ntot)*100, 2))%>%
+  
+  #Preparing data so it's more tidy
+  mutate(Frucht = ifelse(is.na(Frucht)==TRUE, "Andere", Frucht), newFrucht = ifelse(nrel >= 10, Frucht, "Andere"))
+  
+  
+
+ggplot(grouped_wildschwein2)+
+  geom_bar(width = 1, aes(x = hour, y = nrel, fill = newFrucht), stat = 'identity')+
+  facet_wrap(~TierName, nrow = 1)+
+  labs(title = "Aufenthaltsorte von Wildschweinen über den Tag (Relativ)")+
+  ylab("[%]")+
+  xlab("Stunde")
 
 
+ggplot(grouped_wildschwein2)+
+  geom_bar(width = 1, aes(x = hour, y = n, fill = newFrucht), stat = 'identity')+
+  facet_wrap(~TierName, nrow = 1)+
+  labs(title = "Aufenthaltsorte von Wildschweinen über den Tag (Total)")+
+  ylab("Anzahl Fixes")+
+  xlab("Stunde")
 
 
 ```
