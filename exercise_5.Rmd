@@ -72,6 +72,14 @@ ggplot(grouped_wildschwein)+
 ggplot(grouped_wildschwein)+
   geom_bar(aes(x = Frucht, y = n, fill = TierName), stat = 'identity')
 
+grouped_wildschwein2 <- joined_wildschwein%>%
+  mutate(hour = hour(DatetimeUTC))%>%
+  group_by(TierName, Frucht, hour)%>%
+  count(Frucht)
+
+
+
+
 ```
 ##Task 4
 
@@ -87,8 +95,17 @@ tm_shape(veg_index, scientfic = TRUE, format = "g") +
 ```
 ##Task 5
 ```{r}
-xy <- read_delim("data/wildschwein_BE_2056.txt", delim = ",")%>%
-  vect(type="points", geom=c("E", "N"))
+#creating a vector
+xy <- joined_wildschwein
+st_geometry(xy) <- NULL
+xy <- vect(xy, type="points", geom=c("E", "N"))
 
-terra::extract(veg_index, xy, method = "simple", xy = TRUE, fun = NULL)
+#extracting the values from the raster
+veg_info <- terra::extract(veg_index, xy, method = "simple", xy = TRUE, fun = NULL)
+
+#joining the annotated coordinates to the spatial object with a left join
+annotated_wildschwein <- left_join(joined_wildschwein, veg_info, by = c("E" = "x", "N" = "y"))
+                                   
+                                   
+
 ```
